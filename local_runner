@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+rm output.txt
+
+for i in `eval echo {1..$1}`
+do
+  echo "$i" >> output.txt
+
+  for j in {1..5}
+  do
+    python3 CND.py "$i" >> output.txt
+  done  
+done
