@@ -20,8 +20,7 @@ for nonce in range(0, 4294967296):
     if(int(binary[0:D]) == 0):
         termination = time.time()
         elapsed_time = termination - begin
-
-        print(binary + "\n")
-        print('%.5f'%elapsed_time + " secs taken")
+        #print(binary + "\n")
+        print('%.10f'%elapsed_time)
         break
 
