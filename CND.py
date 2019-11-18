@@ -24,7 +24,6 @@ parser.add_argument('d_val', metavar='D', type=int, help='Number of leftmost 0 b
 args = parser.parse_args()
 
 block = 'COMSM0010cloud'
-D = args.d_val
 
 begin = time.time()
 
@@ -47,6 +46,7 @@ response = sqsClient.receive_message(
 message = response['Messages'][0]
 startValue = message['MessageAttributes']['StartValue']['StringValue']
 endValue =   message['MessageAttributes']['EndValue']['StringValue']
+D =          message['MessageAttributes']['DValue']['StringValue']
 print("Message: " + startValue + " | " + endValue)
 
 # Delete message from queue
