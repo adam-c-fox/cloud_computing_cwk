@@ -5,6 +5,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Let's go Nonce hunting in the cloud!")
 parser.add_argument('d_val', metavar='D', type=int, help='Number of leftmost 0 bits')
+parser.add_argument('num_machines', metavar='N', type=int, help='Number of remote machines to use')
 args = parser.parse_args()
 
 # Connect
@@ -15,25 +16,33 @@ queue = sqs.get_queue_by_name(QueueName='cnd_queue.fifo')
 responseQueue = sqs.get_queue_by_name(QueueName='cnd_responses')
 
 # Push messages onto queue
+maxValue = 4294967296
+incrementValue = maxValue//int(args.num_machines)
+
 print("Push messages onto queue...")
-queue.send_message(
-    MessageBody='NonceRequest',
-    MessageAttributes={
-        'StartValue': {
-            'StringValue': '0',
-            'DataType': 'String'
+for i in range(0, int(args.num_machines)):
+    startValue = i*incrementValue
+    endValue = startValue + incrementValue
+    print(str(i) + " | " + str(startValue) + " | " + str(endValue))
+
+    queue.send_message(
+        MessageBody='NonceRequest_'+str(i),
+        MessageAttributes={
+            'StartValue': {
+                'StringValue': str(startValue),
+                'DataType': 'String'
+            },
+            'EndValue': {
+                'StringValue': str(endValue),
+                'DataType': 'String'
+            },
+            'DValue': {
+                'StringValue': str(args.d_val),
+                'DataType': 'String'
+            }
         },
-        'EndValue': {
-            'StringValue': '4294967296',
-            'DataType': 'String'
-        },
-        'DValue': {
-            'StringValue': str(args.d_val),
-            'DataType': 'String'
-        }
-    },
-    MessageGroupId='cnd'
-)
+        MessageGroupId='cnd'
+    )
 
 # Create UserData payload
 user_data = '''#!/bin/bash
@@ -44,7 +53,7 @@ print("Creating instances...")
 instances = ec2.create_instances(ImageId='ami-0391e9e19d3ed0ca3',
                                  InstanceType='t2.micro',
                                  MinCount=1,
-                                 MaxCount=1,
+                                 MaxCount=int(args.num_machines),
                                  KeyName="AWSKeyPair1",
                                  UserData=user_data)
 
@@ -79,5 +88,6 @@ for instance in instances:
 
 ec2.instances.filter(InstanceIds=ids).terminate()
 
-# Purge queue
-# TODO: implement...
+# Purge queues
+sqsClient.purge_queue(QueueUrl=queue.url)
+sqsClient.purge_queue(QueueUrl=responseQueue.url)
