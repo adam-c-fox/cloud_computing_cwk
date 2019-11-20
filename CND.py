@@ -19,10 +19,6 @@ def sendResponse(nonce, binary, sqsClient, responseQueueUrl):
         }
     )
 
-parser = argparse.ArgumentParser(description="Let's go Nonce hunting!")
-parser.add_argument('d_val', metavar='D', type=int, help='Number of leftmost 0 bits')
-args = parser.parse_args()
-
 block = 'COMSM0010cloud'
 
 begin = time.time()
@@ -60,7 +56,7 @@ for nonce in range(int(startValue), int(endValue)):
     hashValue = hashlib.sha256(hashlib.sha256(blockandnonce).digest()).hexdigest()
     binary = bin(int(hashValue, 16))[2:].zfill(256)
 
-    if(int(binary[0:D]) == 0):
+    if(int(binary[0:int(D)]) == 0):
         termination = time.time()
         elapsed_time = termination - begin
         print(nonce)
