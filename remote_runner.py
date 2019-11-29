@@ -1,12 +1,25 @@
 import boto3
-import os
-import time
 import argparse
+import math
+
+# System runtime for a single machine (minutes)
+runtime = 320
 
 parser = argparse.ArgumentParser(description="Let's go Nonce hunting in the cloud!")
-parser.add_argument('d_val', metavar='D', type=int, help='Number of leftmost 0 bits')
-parser.add_argument('num_machines', metavar='N', type=int, help='Number of remote machines to use')
+parser.add_argument('-d', action="store", dest="d_val", metavar='D', type=int, help='Number of leftmost 0 bits')
+parser.add_argument('-n', action="store", dest="num_machines", metavar='N', type=int, help='Number of remote machines to use')
+parser.add_argument('-t', action="store", dest="desired_runtime", metavar='N', type=int, help='Desired runtime in minutes')
+parser.add_argument('-c', action="store", dest="confidence_level", metavar='C', type=float, help='Confidence level for runtime, between 0 and 1')
 args = parser.parse_args()
+
+# Calculate number of machines, when given time
+if (args.desired_runtime is not None and args.confidence_level is not None):
+    num_machines = math.ceil(runtime/args.desired_runtime)
+    num_machines = int(num_machines * args.confidence_level)
+    print("Desired runtime of: " + str(args.desired_runtime) + " with confidence level: " + str(args.confidence_level))
+    print("Required number of machines: " + str(num_machines))
+else:
+    num_machines = args.num_machines
 
 # Connect
 ec2 = boto3.resource('ec2', region_name='us-east-2')
@@ -17,10 +30,10 @@ responseQueue = sqs.get_queue_by_name(QueueName='cnd_responses')
 
 # Push messages onto queue
 maxValue = 4294967296
-incrementValue = maxValue//int(args.num_machines)
+incrementValue = maxValue//int(num_machines)
 
 print("Push messages onto queue...")
-for i in range(0, int(args.num_machines)):
+for i in range(0, int(num_machines)):
     startValue = i*incrementValue
     endValue = startValue + incrementValue
     print(str(i) + " | " + str(startValue) + " | " + str(endValue))
@@ -53,7 +66,7 @@ print("Creating instances...")
 instances = ec2.create_instances(ImageId='ami-0391e9e19d3ed0ca3',
                                  InstanceType='t2.micro',
                                  MinCount=1,
-                                 MaxCount=int(args.num_machines),
+                                 MaxCount=int(num_machines),
                                  KeyName="AWSKeyPair1",
                                  UserData=user_data)
 
