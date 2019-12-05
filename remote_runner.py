@@ -1,6 +1,10 @@
 import boto3
 import argparse
 import math
+import time
+
+# Start Timing
+begin = time.time()
 
 # System runtime for a single machine (minutes)
 runtime = 320
@@ -68,7 +72,10 @@ instances = ec2.create_instances(ImageId='ami-0391e9e19d3ed0ca3',
                                  MinCount=1,
                                  MaxCount=int(num_machines),
                                  KeyName="AWSKeyPair1",
-                                 UserData=user_data)
+                                 UserData=user_data,
+                                 CreditSpecification={
+                                    'CpuCredits': 'unlimited'
+                                 })
 
 # Wait for message on cnd_responses queue
 response = []
@@ -90,8 +97,14 @@ sqsClient.delete_message(
     ReceiptHandle=message['ReceiptHandle']
 )
 
-print("NONCE: ")
+# End timing
+termination = time.time()
+elapsed_time = termination - begin
+
+print("Golden Nonce Located...")
 print(message['MessageAttributes']['Nonce']['StringValue'])
+print(message['MessageAttributes']['Binary']['StringValue'])
+print('%.10f' % elapsed_time + ' secs')
 
 # Terminate instances
 print("Terminating instances...")

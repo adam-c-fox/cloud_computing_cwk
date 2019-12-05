@@ -1,0 +1,18 @@
+{
+	"Resources": {
+		"CNDQueue":{
+			"Properties": {
+				"QueueName": "cnd_queue.fifo",
+				"FifoQueue": true,
+				"ContentBasedDeduplication": true
+			},
+			"Type": "AWS::SQS::Queue"
+		},
+		"CNDResponses":{
+			"Properties": {
+				"QueueName": "cnd_responses"
+			},
+			"Type": "AWS::SQS::Queue"
+		}
+	}
+}
