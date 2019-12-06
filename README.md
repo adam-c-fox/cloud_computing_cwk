@@ -11,6 +11,10 @@ Runs the system with Difficulty Level 28, over 8 remote hosts
 
 Runs the system with Difficulty Level 28, runtime within 60 minutes, at a confidence level of 80%
 
+```> python3 remote_runner.py -d 28 -n 8 -timeout 360```
+
+Runs the system with Difficulty Level 28, over 8 remote hosts, timeout of 360 seconds
+
 ## Local Initialisation
 To run the `remote_runner.py` local script, it is necessary to setup AWS credentials for Boto3. Your Access key and Secret Key can be found in the AWS dashboard, you can opt to either use the default IAM user or create a new one for this system. 
 

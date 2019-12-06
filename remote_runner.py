@@ -14,6 +14,7 @@ parser.add_argument('-d', action="store", dest="d_val", metavar='D', type=int, h
 parser.add_argument('-n', action="store", dest="num_machines", metavar='N', type=int, help='Number of remote machines to use')
 parser.add_argument('-t', action="store", dest="desired_runtime", metavar='N', type=int, help='Desired runtime in minutes')
 parser.add_argument('-c', action="store", dest="confidence_level", metavar='C', type=float, help='Confidence level for runtime, between 0 and 1')
+parser.add_argument('-timeout', action="store", dest="timeout", metavar='TO', type=float, help='Runtime timeout, secs')
 args = parser.parse_args()
 
 # Calculate number of machines, when given time
@@ -84,9 +85,10 @@ instances = ec2.create_instances(ImageId='ami-0391e9e19d3ed0ca3',
 # Wait for message on cnd_responses queue
 response = []
 success = False
+timeout = False
 failCount = 0
-while(not success and failCount < int(num_machines)):
-    while('Messages' not in response):
+while(not timeout and not success and failCount < int(num_machines)):
+    while(not timeout and 'Messages' not in response):
         print("Waiting for response...")
         response = sqsClient.receive_message(
             QueueUrl=responseQueue.url,
@@ -96,22 +98,31 @@ while(not success and failCount < int(num_machines)):
             ],
             WaitTimeSeconds=20
         )
+        # Timeout check
+        if(args.timeout is not None):
+            timeout_test = time.time()
+            check = timeout_test - begin
+            if(check > int(args.timeout)):
+                timeout = True
+                break;
 
-    message = response['Messages'][0]
-    if(int(message['MessageAttributes']['Nonce']['StringValue']) == 0
-       and int(message['MessageAttributes']['Binary']['StringValue']) == 0):
-        failCount += 1
-    else:
-        success = True
+    if not timeout:
+        message = response['Messages'][0]
+        if(int(message['MessageAttributes']['Nonce']['StringValue']) == 0
+        and int(message['MessageAttributes']['Binary']['StringValue']) == 0):
+            failCount += 1
+        else:
+            success = True
 
-    # Delete message from queue
-    sqsClient.delete_message(
-        QueueUrl=responseQueue.url,
-        ReceiptHandle=message['ReceiptHandle']
-    )
-    time.sleep(2)
-    response=[]
-    message=[]
+        # Delete message from queue
+        sqsClient.delete_message(
+            QueueUrl=responseQueue.url,
+            ReceiptHandle=message['ReceiptHandle']
+        )
+        time.sleep(2)
+        response=[]
+
+
 
 # End timing
 termination = time.time()
