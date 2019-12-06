@@ -55,3 +55,10 @@ This will allow your remote instances access to the SQS infrastructure we put in
 The `/lambda` directory provides a SAM file (`CloudNonceDiscovery.yaml`), which specifies the configuration of the Lambda function. And also provides a `lambda_function.py`, the function itself.
 
 Following the instructions provided [here](https://docs.aws.amazon.com/codedeploy/latest/userguide/tutorial-lambda-sam.html), will allow you to create the Lambda function with YAML file, before adding the Python manually after creation.
+
+
+## Misc. Utils
+
+- `create_keypair.py` : Allows creation of keypairs without using the AWS console
+- `instance_starttime_tester.py` : Used to investigate instance launch times
+- `queue_tester.py` : Can manually add computation requests to `cnd_queue.fifo`
