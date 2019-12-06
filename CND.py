@@ -63,3 +63,5 @@ for nonce in range(int(startValue), int(endValue)):
         print('%.10f' % elapsed_time + ' secs')
         sendResponse(nonce, binary, sqsClient, responseQueue.url)
         break
+
+sendResponse(0, 0, sqsClient, responseQueue.url)

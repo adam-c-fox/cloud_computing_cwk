@@ -40,6 +40,10 @@ print("Push messages onto queue...")
 for i in range(0, int(num_machines)):
     startValue = i*incrementValue
     endValue = startValue + incrementValue
+
+    if i == int(num_machines)-1:
+        endValue += (maxValue-endValue)
+
     print(str(i) + " | " + str(startValue) + " | " + str(endValue))
 
     queue.send_message(
@@ -79,32 +83,47 @@ instances = ec2.create_instances(ImageId='ami-0391e9e19d3ed0ca3',
 
 # Wait for message on cnd_responses queue
 response = []
-while('Messages' not in response):
-    print("Waiting for response...")
-    response = sqsClient.receive_message(
-        QueueUrl=responseQueue.url,
-        MaxNumberOfMessages=1,
-        MessageAttributeNames=[
-            'All'
-        ],
-        WaitTimeSeconds=20
-    )
+success = False
+failCount = 0
+while(not success and failCount < int(num_machines)):
+    while('Messages' not in response):
+        print("Waiting for response...")
+        response = sqsClient.receive_message(
+            QueueUrl=responseQueue.url,
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=[
+                'All'
+            ],
+            WaitTimeSeconds=20
+        )
 
-# Delete message from queue
-message = response['Messages'][0]
-sqsClient.delete_message(
-    QueueUrl=responseQueue.url,
-    ReceiptHandle=message['ReceiptHandle']
-)
+    message = response['Messages'][0]
+    if(int(message['MessageAttributes']['Nonce']['StringValue']) == 0
+       and int(message['MessageAttributes']['Binary']['StringValue']) == 0):
+        failCount += 1
+    else:
+        success = True
+
+    # Delete message from queue
+    sqsClient.delete_message(
+        QueueUrl=responseQueue.url,
+        ReceiptHandle=message['ReceiptHandle']
+    )
+    time.sleep(2)
+    response=[]
+    message=[]
 
 # End timing
 termination = time.time()
 elapsed_time = termination - begin
 
-print("Golden Nonce Located...")
-print(message['MessageAttributes']['Nonce']['StringValue'])
-print(message['MessageAttributes']['Binary']['StringValue'])
-print('%.10f' % elapsed_time + ' secs')
+if(success):
+    print("Golden Nonce Located...")
+    print(message['MessageAttributes']['Nonce']['StringValue'])
+    print(message['MessageAttributes']['Binary']['StringValue'])
+    print('%.10f' % elapsed_time + ' secs')
+else:
+    print("No Golden Nonces Located...")
 
 # Terminate instances
 print("Terminating instances...")
